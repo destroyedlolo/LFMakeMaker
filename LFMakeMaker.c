@@ -1,7 +1,7 @@
 /*
  *  LFMakeMaker
  *
- *  © LFSoft 1997
+ *  © LFSoft 1997-2016
  *
  *   I wrote this little code for automaticaly creating MakeFile for
  *  GCC (but may be used with others compilers).
@@ -1252,7 +1252,7 @@ void option(struct _opt *ctx, const char *x){
     } else if(!strcmp(x,"-v") || !strcmp(x,"--verbose")){
         DAMSG(" -> --verbose");
         ctx->verbose = 1;
-        fputs("LFMakeMaker "VERSION"\n(c) LFSoft 1997.\n",stderr);
+        fputs("LFMakeMaker "VERSION"\n(c) LFSoft 1997 - 2016.\n",stderr);
 
     } else if(!strcmp(x,"--debug")){
         struct ldata *nd;
@@ -1392,7 +1392,7 @@ int main(int ac, char **av){
 
     if(ac<2){
         fputs("LFMakeMaker " VERSION "\n"
-            "\t(c) LFSoft 1997.\n\n"
+            "\t(c) LFSoft 1997 - 2016.\n\n"
             "LFMakeMaker [options] sources_file\n"
             "options are:\n"
 "options for local headers (#include \"xxx\")\n"

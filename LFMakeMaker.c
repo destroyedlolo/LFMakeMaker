@@ -1,7 +1,7 @@
 /*
  *  LFMakeMaker
  *
- *  © LFSoft 1997-2016
+ *  © LFSoft 1997-2018
  *
  *   I wrote this little code for automaticaly creating MakeFile for
  *  GCC (but may be used with others compilers).
@@ -132,10 +132,7 @@
  *  Even this tool is FREEWARE, gifts are welcome ( 68060 board, Multi-Sync
  *  monitor (ha ha), chocolates, ... or only a post card ).
  *  Write to:
- *                      Laurent Faillie
- *                       "Les Vuardes"
- *                      74930 Pers-Jussy
- *                          FRANCE
+ *  	l_faillie(at)yahoo.com
  *
  *  LFMakeMaker was developped and tested on
  *      - Amiga 1000 (68010, 8Mb, HD 52Mb, WB 2.1),
@@ -236,6 +233,10 @@
  * 		Version 1.3
  * 		-----------
  * 	13-04-2016	A: Add --shared target
+ *
+ * 		Version 1.4
+ * 		-----------
+ * 	03-04-2018	A: Add --opts to be compatible with GCC 5.4+
  */
 
 #include <stdio.h>
@@ -272,7 +273,7 @@
     #define DAMSG(x)
 #endif
 
-#define VERSION "1.3 ("__DATE__ " " __TIME__ ")"
+#define VERSION "1.4 ("__DATE__ " " __TIME__ ")"
 
 struct ldata {
     struct ldata *succ; /* Notez-bien : This must be the first field */
@@ -297,6 +298,7 @@ struct _opt {
     const char *exec;   /* NULL if objects will be generated */
     const char *oprefix; /* NULL if no prefix will be added */
     const char *cc;     /* The compiler command */
+	const char *opts;	/* The compiler options */
 
     struct ldata *ginc; /* List of all global include read for the current source file (malloc())*/
     struct ldata *linc; /* List of all local include read for the current source file (malloc())*/
@@ -497,7 +499,7 @@ void generate(struct _opt *ctx, const char *dst, int gen_obj, int ign_lt, int so
         if(ctx->verbose)
             fputs("Generating CC command.\n",stderr);
         puts("\n#The compiler (may be customized for compiler's options).");
-        printf("cc=%s\n\n",ctx->cc);
+        printf("cc=%s\nopts=%s\n\n",ctx->cc, ctx->opts ? ctx->opts : "");
         ctx->fgen = 1;
     }
 
@@ -536,6 +538,7 @@ void generate(struct _opt *ctx, const char *dst, int gen_obj, int ign_lt, int so
             exit(EXIT_FAILURE);
         } else
             genline(ctx,ctx->linc->x);
+        genline(ctx,"$(opts)");
         genline(ctx,NULL); genline(ctx,NULL);
     } else { /* Generate an executable */
         if(ctx->exec){
@@ -559,6 +562,7 @@ void generate(struct _opt *ctx, const char *dst, int gen_obj, int ign_lt, int so
         	genline(ctx,"\t $(cc) -o");
         genline(ctx,dst);
         for(nd=ctx->obj; nd; nd = nd->succ) genline(ctx,nd->x);
+        genline(ctx,"$(opts)");
         genline(ctx,"\n\n");
 
         freelsta(&ctx->obj); /* Destroy source file for this target */
@@ -1108,6 +1112,22 @@ void option(struct _opt *ctx, const char *x){
         }
         ctx->cc = ++o;
 
+    } else if(!strcmpopt(x,"--opts",&o)){
+        #ifdef DEBUGALL
+            fprintf(stderr,"--opts (%s)",o);
+        #endif
+        if(*o != '='){
+            fputs("--opts needs an argument\n",stderr);
+            exit(EXIT_FAILURE);
+        }
+
+		if(ctx->fgen){
+            fputs("misplaced --opts option : already used.\n",stderr);
+            exit(EXIT_FAILURE);
+        }
+        ctx->opts = ++o;
+
+
     } else if(!strcmpopt(x,"+c",&o) || !strcmpopt(x,"--check",&o)){
         #ifdef DEBUGALL
             fprintf(stderr,"--check (%s)",o);
@@ -1375,6 +1395,7 @@ int main(int ac, char **av){
     opt.nc = 1; opt.fatal = 0;
     opt.fgen = 0;
     opt.cc = "cc";  /* The default compiler command */
+	opt.opts = NULL;
     opt.line = DEFLINE; opt.tab=DEFTAB;
     opt.exec = opt.oprefix = NULL;
     opt.ginc = opt.linc = opt.ltarget = NULL;
@@ -1429,6 +1450,7 @@ int main(int ac, char **av){
 "-nc or --no-nested : Forbid nested comments.\n"
 "\tThe default is accorded with your architecture file-system\n\t(-cs on the Amiga or +cs on Unix).\n"
 "-cc=\"cmd\" or --compiler=\"cmd\" : Use 'cmd' as compiler command,\n\tdefault is 'cc'.\n"
+"--opts=\"compiler's options\" : options to be put after sources and targets.\n"
 "--line=\"number\" : Set the limite of a line length in generated makefile.\n"
 "--tab=\"number\": Set the number of space for a TAB.\n"
 "--fatal : Abort if an include file can't be opened\n\tor when a target is generated twice.\n"

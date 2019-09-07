@@ -1,7 +1,7 @@
 /*
  *  LFMakeMaker
  *
- *  © LFSoft 1997-2018
+ *  © LFSoft 1997-2019
  *
  *   I wrote this little code for automaticaly creating MakeFile for
  *  GCC (but may be used with others compilers).
@@ -237,6 +237,11 @@
  * 		Version 1.4
  * 		-----------
  * 	03-04-2018	A: Add --opts to be compatible with GCC 5.4+
+ *
+ * 		Version 1.5
+ * 		-----------
+ * 	07/09/2019	Remove "inline" that creates linker error with GCC 8.3.0
+ * 		(useless anyway nowdays)
  */
 
 #include <stdio.h>
@@ -310,9 +315,6 @@ struct _opt {
     struct ldata *inc;  /* List of directory where include reside in */
 };
 
-#ifdef __GNUC__
-inline
-#endif
 struct ldata *ldfind( struct _opt *ctx, struct ldata **lst, const char *x, struct ldata **prec ){
 /* Find 'x' in 'lst'.
  * return the pointer to 'x' if it exist or NULL else.
@@ -339,9 +341,6 @@ struct ldata *ldfind( struct _opt *ctx, struct ldata **lst, const char *x, struc
     return c;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 struct ldata *ldadd( struct _opt *ctx, struct ldata **lst, char *x, int end ){
 /* Add a new data 'x' to the list 'lst'.
  * end == 1 if you want the data to be added at THE END of 'lst'.
@@ -381,9 +380,6 @@ struct ldata *ldadd( struct _opt *ctx, struct ldata **lst, char *x, int end ){
     return nn;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 struct ldata *ldadda( struct _opt *ctx, struct ldata **lst, char *x, int end ){
 /* Like ldadd() but 'x' will be strdup()ed.
  */
@@ -426,9 +422,6 @@ struct ldata *ldadda( struct _opt *ctx, struct ldata **lst, char *x, int end ){
     return nn;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 void freelst(struct ldata **lst){
 /* Free a list of non-allocated objects */
     register struct ldata *nd,*succ;
@@ -441,9 +434,6 @@ void freelst(struct ldata **lst){
     *lst=NULL;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 void freelsta(struct ldata **lst){
 /* Free a list of allocated objects */
     register struct ldata *nd=*lst,*succ;
@@ -596,9 +586,6 @@ int cfnidx;
  */
 void readsource(struct _opt *, const char *);
 
-#ifdef __GNUC__
-inline
-#endif
 int valide(struct _opt *ctx, int local){
 /*  Look in context if the file in cfn may be treated.
  *  <- ctx : Current context,
@@ -949,9 +936,6 @@ autre:
     nbre_rec--;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 int strcmpopt(const char *y, const char *x, const char **end){
 /* Like strcmp() but looks only on x's len.
  * 'end' contains the pointer on 'y' of the first character not in 'x'.
@@ -964,9 +948,6 @@ int strcmpopt(const char *y, const char *x, const char **end){
     return 0;
 }
 
-#ifdef __GNUC__
-inline
-#endif
 void tstarg(const char *x){
 /* Some systems (like AmigaDOS) use ':' as special separator in filename (i.e.
  * after drivename). This may confuse 'make' so we display a warning.

@@ -242,6 +242,10 @@
  * 		-----------
  * 	07/09/2019	Remove "inline" that creates linker error with GCC 8.3.0
  * 		(useless anyway nowdays)
+ *
+ * 		Version 1.6
+ * 		-----------
+ * 	07-05-2022	A: Add --ar option
  */
 
 #include <stdio.h>
@@ -278,7 +282,7 @@
     #define DAMSG(x)
 #endif
 
-#define VERSION "1.4 ("__DATE__ " " __TIME__ ")"
+#define VERSION "1.6 ("__DATE__ " " __TIME__ ")"
 
 struct ldata {
     struct ldata *succ; /* Notez-bien : This must be the first field */
@@ -482,6 +486,7 @@ void generate(struct _opt *ctx, const char *dst, int gen_obj, int ign_lt, int so
  * 'gen_obj' == 1 if we generate an object file so ctx->obj will be ignored.
  * ign_lt == 1 if the check in 'ltarget' must be ignored.
  * so == 1 if a shared object will be created (dst had to be NULL).
+ * so == 2 if 'ar' library
  */
     register struct ldata *nd;
 
@@ -546,13 +551,21 @@ void generate(struct _opt *ctx, const char *dst, int gen_obj, int ign_lt, int so
         for(nd=ctx->ginc; nd; nd = nd->succ) genline(ctx,nd->x);
         for(nd=ctx->force; nd; nd = nd->succ) genline(ctx,nd->x); /* Finaly forced files */
         genline(ctx,NULL);
-		if(so)
+		switch(so){
+		case 1:
         	genline(ctx,"\t $(cc) -shared -o");
-		else
+			break;
+		case 2:
+        	genline(ctx,"\t ar rcs ");
+			break;
+		default:
         	genline(ctx,"\t $(cc) -o");
+		}
+
         genline(ctx,dst);
         for(nd=ctx->obj; nd; nd = nd->succ) genline(ctx,nd->x);
-        genline(ctx,"$(opts)");
+		if(so != 2)
+	        genline(ctx,"$(opts)");
         genline(ctx,"\n\n");
 
         freelsta(&ctx->obj); /* Destroy source file for this target */
@@ -1067,6 +1080,27 @@ void option(struct _opt *ctx, const char *x){
 
         freelsta(&ctx->obj);
 
+    } else if(!strcmpopt(x,"-ar",&o)){
+        #ifdef DEBUGALL
+            fprintf(stderr,"-ar (%s)",o);
+        #endif
+
+        if(ctx->exec){
+            generate(ctx,NULL,0,0,0); /* Pending --exec */
+            freelsta(&ctx->obj);
+        }
+
+        if(*o == '='){
+            tstarg(++o);
+            if(!ctx->obj){
+                fprintf(stderr,"For target '%s': No objects files.\n",o);
+                printf("\nFor target '%s': No objects files.\n",o);
+            } else
+                generate(ctx,o,0,0,2);
+        }
+
+        freelsta(&ctx->obj);
+
     } else if(!strcmpopt(x,"-po",&o) || !strcmpopt(x,"--prefix",&o)){
         #ifdef DEBUGALL
             fprintf(stderr,"--prefix (%s)",o);
@@ -1253,7 +1287,7 @@ void option(struct _opt *ctx, const char *x){
     } else if(!strcmp(x,"-v") || !strcmp(x,"--verbose")){
         DAMSG(" -> --verbose");
         ctx->verbose = 1;
-        fputs("LFMakeMaker "VERSION"\n(c) LFSoft 1997 - 2016.\n",stderr);
+        fputs("LFMakeMaker "VERSION"\n(c) LFSoft 1997 - 2022.\n",stderr);
 
     } else if(!strcmp(x,"--debug")){
         struct ldata *nd;
